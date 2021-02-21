@@ -1,67 +1,142 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 
-set VLC_PATH=
-set INPUT=
+set INI_FILE_PATH=main.ini
 
-set INTERFACE="qt"
-set BACKGROUND_INTERFACE="http,oldrc"
-set RANDOM_PLAYBACK=1
-set LOOP_IN_PLAYLIST=1
-set REPEAT_TRACK=
-set AUTOPLAY=1
-set PLAY_PRIOR_STREAM=1
-set LIMIT_PLAYBACK_INSTANCE=1
-set USE_WEB_CLIENT=1
+::begin of variable
+set keys=VLC^
 
-set STREAM_PROTOCOL=http
-set STREAM_MUXER=ogg
-set STREAM_HOSTNAME=
-set STREAM_PORT=8080
-set STREAM_PATH=
+INPUT^
 
-set OPTIONS[0].name=RANDOM_PLAYBACK
-set OPTIONS[0].default=-Z
-set OPTIONS[1].name=LOOP_IN_PLAYLIST
-set OPTIONS[1].default=-L
-set OPTIONS[2].name=REPEAT_TRACK
-set OPTIONS[2].default=-R
-set OPTIONS[3].name=AUTOPLAY
-set OPTIONS[3].default=--playlist-autostart
-set OPTIONS[4].name=PLAY_PRIOR_STREAM
-set OPTIONS[4].default=--no-sout-all
-set OPTIONS[5].name=LIMIT_PLAYBACK_INSTANCE
-set OPTIONS[5].default=--sout-keep
-set OPTIONS[5].name=LIMIT_PLAYBACK_INSTANCE
-set OPTIONS[5].default=--sout-keep
-set OPTIONS[6].name=USE_WEB_CLIENT
-set OPTIONS[6].default=--http-port 8888
+INTERFACE^
 
-if "%VLC_PATH%" == "" set VLC_PATH=vlc
-if "%INPUT%" == "" (
+BACKGROUND_INTERFACE^
+
+RANDOM^
+
+LOOP^
+
+REPEAT^
+
+AUTOPLAY^
+
+PLAY_PRIOR_ONLY^
+
+LIMIT_INSTANCE^
+
+WEB_CLIENT_PORT^
+
+STREAM_PROTOCOL^
+
+STREAM_MUXER^
+
+STREAM_HOTNAME^
+
+STREAM_PORT^
+
+STREAM_PATH
+::end of variable
+
+call :get_length keys l
+
+set VLC.default=vlc
+set VLC.dq=1
+set INPUT.default=
+set INPUT.dq=1
+set INTERFACE.default=qt
+set INTERFACE.label=--intf
+set BACKGROUND_INTERFACE.default=http,oldrc
+set BACKGROUND_INTERFACE.dq=1
+set BACKGROUND_INTERFACE.label=--extraintf
+set RANDOM.default=-Z
+set RANDOM.const=1
+set LOOP.default=-L
+set LOOP.const=1
+set REPEAT.default=-R
+set REPEAT.const=1
+set AUTOPLAY.default=--playlist-autostart
+set AUTOPLAY.const=1
+set PLAY_PRIOR_ONLY.default=--no-sout-all
+set PLAY_PRIOR_ONLY.const=1
+set LIMIT_INSTANCE.default=--sout-keep
+set LIMIT_INSTANCE.const=1
+set WEB_CLIENT_PORT.default=8888
+set WEB_CLIENT_PORT.label=--http-port
+
+set STREAM_PROTOCOL.default=http
+set STREAM_MUXER.default=ogg
+set STREAM_HOTNAME.default=
+set STREAM_PORT.default=8080
+set STREAM_PATH.default=
+
+if exist "%INI_FILE_PATH%" (
+	for /f "usebackq delims== tokens=1,2" %%a in ("%INI_FILE_PATH%") do (
+		if defined %%a.default (
+			if not "%%b"=="" (
+				if "%%b"=="/" (set %%a=!%%a.default!) else (set %%a=%%b)
+				if not "!%%a!"=="" (
+					if defined %%a.const set %%a=!%%a.default!
+					if !%%a.dq!==1 set %%a="!%%a!"
+					if defined %%a.label set %%a=!%%a.label! !%%a!
+				)
+			)
+		)
+	)
+)
+
+if exist "%~1" set INPUT=%~1
+
+for /f "usebackq delims= " %%a in ('!keys!') do (
+	if not defined %%a (
+		set %%a=!%%a.default!
+		if !%%a.dq!==1 set %%a="!%%a!"
+		if defined %%a.label set %%a=!%%a.label! !%%a!
+	)
+)
+
+goto build
+
+if "%INPUT%"=="""" (
 	echo Input a file path for streaming. Empty will be canceled to execute.
 	set /p INPUT=
 	if "!INPUT!"=="" goto END
+	set INPUT="!INPUT!"
 )
 
-for /l %%i in (0,1,20) do (
-	if "!OPTIONS[%%i].name!"=="" (
-		set /a OPTIONS_LENGTH=%%i - 1
-		goto SET_OPTIONS_LENGTH
-	)
-)
-:SET_OPTIONS_LENGTH
+if not exist %INPUT% echo No file such %INPUT% & goto END
 
+:build
 ::About nesting delayed expansion.
 ::https://qiita.com/plcherrim/items/c7c477cacf8c97792e17
 set OPTIONS=
-for /l %%i in (0,1,!OPTIONS_LENGTH!) do (
-	call set v=%%!OPTIONS[%%i].name!%%
-	if !v!==1 set OPTIONS=!OPTIONS! !OPTIONS[%%i].default!
+for /f "usebackq delims= " %%a in ('!keys!') do (
+	set k=%%a
+	set v=!%%a!
+	if not %%a==VLC if not "%k:~0,7%" == "STREAM_" set OPTIONS=!OPTIONS! !v!
 )
+set SOUT=-sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
+echo %VLC%%OPTIONS% %SOUT%
 
-"%VLC_PATH%" "%INPUT%" --intf %INTERFACE% --extraintf %BACKGROUND_INTERFACE%%OPTIONS% -sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOSTNAME%:%STREAM_PORT%%STREAM_PATH%
+goto :END
+
+"%VLC_PATH%" "%INPUT%" --intf %INTERFACE% --extraintf %BACKGROUND_INTERFACE%%OPTIONS% -sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
 
 :END
 endlocal
 pause
+
+:get_length
+set %~2=0
+for /f "usebackq delims= " %%a in ('!%~1!') do set /a %~2=%~2 + 1
+exit /b
+
+:get_length_old
+if "%~4"=="" set %~3=0
+call :count %~1 %~2 %~3 !!%~3!!
+exit /b
+:count
+if not "!!%~1[%~4].%~2!!"=="" (
+	set /a %~3=%~4 + 1
+	call :get_length %~1 %~2 %~3 !!%~3!!
+)
+exit /b
