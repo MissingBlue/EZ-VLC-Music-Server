@@ -1,7 +1,9 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 
+
 set INI_FILE_PATH=main.ini
+
 
 ::begin of variable
 set keys=VLC^
@@ -42,8 +44,7 @@ CMD_WINDOW_STATE
 if exist "%PROGRAMFILES%\VideoLAN\VLC\vlc.exe" (
 	set VLC.default=%PROGRAMFILES%\VideoLAN\VLC\vlc.exe
 ) else if exist "%PROGRAMFILES(X86)%\VideoLAN\VLC\vlc.exe" (
-	set VLC.default="%PROGRAMFILES(X86)%\VideoLAN\VLC\vlc.exe"
-	set VLC.wq=
+	set VLC.default="%PROGRAMFILES(X86)%\VideoLAN\VLC\vlc.exe"&set VLC.wq=
 )
 if not defined VLC.wq set VLC.wq=1
 set INPUT.default=
@@ -80,7 +81,7 @@ set CMD_WINDOW_STATE[0]=
 set CMD_WINDOW_STATE[1]=/min
 set CMD_WINDOW_STATE[2]=/max
 
-set debug_mode=1
+set debug_mode=
 
 if exist "%INI_FILE_PATH%" (
 	for /f "usebackq delims== tokens=1,2" %%a in ("%INI_FILE_PATH%") do (
@@ -97,6 +98,8 @@ if exist "%INI_FILE_PATH%" (
 
 if exist "%~1" set INPUT=%~1
 
+:: About nesting delayed expansion.
+:: https://qiita.com/plcherrim/items/c7c477cacf8c97792e17
 for /f "usebackq delims= " %%a in ('!keys!') do (
 	if "!%%a.sw!"=="1" (
 		if not defined %%a[!%%a!] set %%a=!%%a.default!
@@ -142,9 +145,9 @@ if not exist !%1! (
 exit /b
 :input
 echo Input a path for %~2. Empty will be canceled to execute.&echo;
-echo * * * * * * * * * * * * * * * * * * * * * * * * * *
-echo Please do NOT put double quotes(") at any position.
-echo * * * * * * * * * * * * * * * * * * * * * * * * * *
+echo * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+echo   Please do NOT put double quotes(") at any position.
+echo * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 set /p %1=
 if "!%1!"=="" goto END
 exit /b
