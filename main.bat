@@ -80,18 +80,16 @@ set CMD_WINDOW_STATE[0]=
 set CMD_WINDOW_STATE[1]=/min
 set CMD_WINDOW_STATE[2]=/max
 
-set debug_mode=
+set debug_mode=1
 
 if exist "%INI_FILE_PATH%" (
 	for /f "usebackq delims== tokens=1,2" %%a in ("%INI_FILE_PATH%") do (
-		if defined %%a.default (
-			if not "%%b"=="" (
-				if "%%b"=="/" (set %%a=!%%a.default!) else (set %%a=%%b)
-				if not "!%%a!"=="" (
-					if defined %%a.const set %%a=!%%a.default!
-					if !%%a.wq!==1 set %%a="!%%a!"
-					if defined %%a.label set %%a=!%%a.label! !%%a!
-				)
+		if defined %%a.default if not "%%b"=="" (
+			if "%%b"=="/" (set %%a=!%%a.default!) else (set %%a=%%b)
+			if not "!%%a!"=="" (
+				if defined %%a.const set %%a=!%%a.default!
+				if !%%a.wq!==1 set %%a="!%%a!"
+				if defined %%a.label set %%a=!%%a.label! !%%a!
 			)
 		)
 	)
