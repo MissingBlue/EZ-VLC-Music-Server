@@ -34,17 +34,24 @@ STREAM_HOTNAME^
 
 STREAM_PORT^
 
-STREAM_PATH
+STREAM_PATH^
+
+CMD_WINDOW_STATE
 ::end of variable
 
-set VLC.default=vlc
-set VLC.dq=1
+if exist "%PROGRAMFILES%\VideoLAN\VLC\vlc.exe" (
+	set VLC.default=%PROGRAMFILES%\VideoLAN\VLC\vlc.exe
+) else if exist "%PROGRAMFILES(X86)%\VideoLAN\VLC\vlc.exe" (
+	set VLC.default="%PROGRAMFILES(X86)%\VideoLAN\VLC\vlc.exe"
+	set VLC.wq=
+)
+if not defined VLC.wq set VLC.wq=1
 set INPUT.default=
-set INPUT.dq=1
+set INPUT.wq=1
 set INTERFACE.default=qt
 set INTERFACE.label=--intf
 set BACKGROUND_INTERFACE.default=http,oldrc
-set BACKGROUND_INTERFACE.dq=1
+set BACKGROUND_INTERFACE.wq=1
 set BACKGROUND_INTERFACE.label=--extraintf
 set RANDOM.default=-Z
 set RANDOM.const=1
@@ -58,7 +65,7 @@ set PLAY_PRIOR_ONLY.default=--no-sout-all
 set PLAY_PRIOR_ONLY.const=1
 set LIMIT_INSTANCE.default=--sout-keep
 set LIMIT_INSTANCE.const=1
-set WEB_CLIENT_PORT.default=8888
+set WEB_CLIENT_PORT.default=8088
 set WEB_CLIENT_PORT.label=--http-port
 
 set STREAM_PROTOCOL.default=http
@@ -67,6 +74,14 @@ set STREAM_HOTNAME.default=
 set STREAM_PORT.default=8080
 set STREAM_PATH.default=
 
+set CMD_WINDOW_STATE.default=0
+set CMD_WINDOW_STATE.sw=1
+set CMD_WINDOW_STATE[0]=
+set CMD_WINDOW_STATE[1]=/min
+set CMD_WINDOW_STATE[2]=/max
+
+set debug_mode=
+
 if exist "%INI_FILE_PATH%" (
 	for /f "usebackq delims== tokens=1,2" %%a in ("%INI_FILE_PATH%") do (
 		if defined %%a.default (
@@ -74,7 +89,7 @@ if exist "%INI_FILE_PATH%" (
 				if "%%b"=="/" (set %%a=!%%a.default!) else (set %%a=%%b)
 				if not "!%%a!"=="" (
 					if defined %%a.const set %%a=!%%a.default!
-					if !%%a.dq!==1 set %%a="!%%a!"
+					if !%%a.wq!==1 set %%a="!%%a!"
 					if defined %%a.label set %%a=!%%a.label! !%%a!
 				)
 			)
@@ -85,35 +100,53 @@ if exist "%INI_FILE_PATH%" (
 if exist "%~1" set INPUT=%~1
 
 for /f "usebackq delims= " %%a in ('!keys!') do (
-	if not defined %%a (
-		set %%a=!%%a.default!
-		if !%%a.dq!==1 set %%a="!%%a!"
-		if defined %%a.label set %%a=!%%a.label! !%%a!
+	if "!%%a.sw!"=="1" (
+		if not defined %%a[!%%a!] set %%a=!%%a.default!
+		call set %%a=%%%%a[!%%a!]%%
 	)
 )
 
-goto build
+if "%debug_mode%"=="1" goto build
 
-if "%INPUT%"=="""" (
-	echo Input a file path for streaming. Empty will be canceled to execute.
-	set /p INPUT=
-	if "!INPUT!"=="" goto END
-	set INPUT="!INPUT!"
-)
-
-if not exist %INPUT% echo No file such %INPUT% & goto END
+call :input_path VLC ""vlc.exe""
+call :input_path INPUT "file path"
 
 :build
-set OPTIONS=
-for /f "usebackq delims= " %%a in ('!keys!') do set k=%%a&set v=!%%a!&if not %%a==VLC if not "!k:~0,7!" == "STREAM_" set OPTIONS=!OPTIONS! !v!
-set SOUT= -sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
-if "%SOUT%"== "-sout /://" set SOUT=
-echo %VLC%%OPTIONS%%SOUT%
+set OPTIONS=&set CMD=
+for /f "usebackq delims= " %%a in ('!keys!') do (
+	if defined %%a (
+		set k=%%a&set v=!%%a!
+		if not %%a==VLC if not "!k:~0,7!" == "STREAM_" (
+			if "!k:~0,4!" == "CMD_" (set CMD=!CMD! !v!) else (set OPTIONS=!OPTIONS! !v!)
+		)
+	)
+)
+set SOUT= --sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
+if "%SOUT%"== "--sout /://" set SOUT=
 
-goto :END
+if "%debug_mode%"=="1" echo ""!CMD! %VLC%%OPTIONS%%SOUT%&goto END
 
-"%VLC_PATH%" "%INPUT%" --intf %INTERFACE% --extraintf %BACKGROUND_INTERFACE%%OPTIONS% -sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
+start ""!CMD! %VLC%%OPTIONS%%SOUT%
 
 :END
 endlocal
 pause
+exit
+
+:input_path
+if not exist !%1! (
+	echo;&echo No such a file: !%1!
+	set %1=
+	call :input %1 %2
+	if defined %1.wq if %1.wq==1 (set %1="!%1!") else (set %1=!%1!)
+	call :input_path %1 %2
+)
+exit /b
+:input
+echo Input a path for %~2. Empty will be canceled to execute.&echo;
+echo * * * * * * * * * * * * * * * * * * * * * * * * * *
+echo Please do NOT put double quotes(") at any position.
+echo * * * * * * * * * * * * * * * * * * * * * * * * * *
+set /p %1=
+if "!%1!"=="" goto END
+exit /b
