@@ -32,7 +32,7 @@ STREAM_PROTOCOL^
 
 STREAM_MUXER^
 
-STREAM_HOTNAME^
+STREAM_HOSTNAME^
 
 STREAM_PORT^
 
@@ -71,7 +71,7 @@ set WEB_CLIENT_PORT.label=--http-port
 
 set STREAM_PROTOCOL.default=http
 set STREAM_MUXER.default=ogg
-set STREAM_HOTNAME.default=
+set STREAM_HOSTNAME.default=
 set STREAM_PORT.default=8080
 set STREAM_PATH.default=
 
@@ -122,7 +122,7 @@ for /f "usebackq delims= " %%a in ('!keys!') do (
 		)
 	)
 )
-set SOUT= --sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
+set SOUT= --sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOSTNAME%:%STREAM_PORT%%STREAM_PATH%
 if "%SOUT%"== "--sout /://" set SOUT=
 
 if "%debug_mode%"=="1" echo ""!CMD! %VLC%%OPTIONS%%SOUT%&goto END
