@@ -104,16 +104,11 @@ if "%INPUT%"=="""" (
 if not exist %INPUT% echo No file such %INPUT% & goto END
 
 :build
-::About nesting delayed expansion.
-::https://qiita.com/plcherrim/items/c7c477cacf8c97792e17
 set OPTIONS=
-for /f "usebackq delims= " %%a in ('!keys!') do (
-	set k=%%a
-	set v=!%%a!
-	if not %%a==VLC if not "!k:~0,7!" == "STREAM_" set OPTIONS=!OPTIONS! !v!
-)
-set SOUT=-sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
-echo %VLC%%OPTIONS% %SOUT%
+for /f "usebackq delims= " %%a in ('!keys!') do set k=%%a&set v=!%%a!&if not %%a==VLC if not "!k:~0,7!" == "STREAM_" set OPTIONS=!OPTIONS! !v!
+set SOUT= -sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
+if "%SOUT%"== "-sout /://" set SOUT=
+echo %VLC%%OPTIONS%%SOUT%
 
 goto :END
 
