@@ -93,6 +93,7 @@ if exist "%INI_FILE_PATH%" (
 				if defined %%a.label set %%a=!%%a.label! !%%a!
 			)
 		)
+		set %%a.defined=1
 	)
 )
 
@@ -104,6 +105,10 @@ for /f "usebackq delims= " %%a in ('!keys!') do (
 	if "!%%a.sw!"=="1" (
 		if not defined %%a[!%%a!] set %%a=!%%a.default!
 		call set %%a=%%%%a[!%%a!]%%
+	) else if not defined %%a.defined (
+		set %%a=!%%a.default!
+		if !%%a.wq!==1 set %%a="!%%a!"
+		if defined %%a.label set %%a=!%%a.label! !%%a!
 	)
 )
 
@@ -125,14 +130,9 @@ for /f "usebackq delims= " %%a in ('!keys!') do (
 set SOUT= --sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOSTNAME%:%STREAM_PORT%%STREAM_PATH%
 if "%SOUT%"== "--sout /://" set SOUT=
 
-if "%debug_mode%"=="1" echo ""!CMD! %VLC%%OPTIONS%%SOUT%&goto END
-
-start ""!CMD! %VLC%%OPTIONS%%SOUT%
-
 :END
-endlocal
-pause
-exit
+if "%debug_mode%"=="1" (echo ""!CMD! %VLC%%OPTIONS%%SOUT%&pause) else (start ""!CMD! %VLC%%OPTIONS%%SOUT%)
+endlocal&exit
 
 :input_path
 if not exist !%1! (
