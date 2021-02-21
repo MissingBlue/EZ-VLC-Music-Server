@@ -37,8 +37,6 @@ STREAM_PORT^
 STREAM_PATH
 ::end of variable
 
-call :get_length keys l
-
 set VLC.default=vlc
 set VLC.dq=1
 set INPUT.default=
@@ -112,7 +110,7 @@ set OPTIONS=
 for /f "usebackq delims= " %%a in ('!keys!') do (
 	set k=%%a
 	set v=!%%a!
-	if not %%a==VLC if not "%k:~0,7%" == "STREAM_" set OPTIONS=!OPTIONS! !v!
+	if not %%a==VLC if not "!k:~0,7!" == "STREAM_" set OPTIONS=!OPTIONS! !v!
 )
 set SOUT=-sout %STREAM_PROTOCOL%/%STREAM_MUXER%://%STREAM_HOTNAME%:%STREAM_PORT%%STREAM_PATH%
 echo %VLC%%OPTIONS% %SOUT%
@@ -124,19 +122,3 @@ goto :END
 :END
 endlocal
 pause
-
-:get_length
-set %~2=0
-for /f "usebackq delims= " %%a in ('!%~1!') do set /a %~2=%~2 + 1
-exit /b
-
-:get_length_old
-if "%~4"=="" set %~3=0
-call :count %~1 %~2 %~3 !!%~3!!
-exit /b
-:count
-if not "!!%~1[%~4].%~2!!"=="" (
-	set /a %~3=%~4 + 1
-	call :get_length %~1 %~2 %~3 !!%~3!!
-)
-exit /b
