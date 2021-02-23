@@ -80,7 +80,7 @@ set CMD_WINDOW_STATE[0]=
 set CMD_WINDOW_STATE[1]=/min
 set CMD_WINDOW_STATE[2]=/max
 
-set debug_mode=1
+set debug_mode=
 
 if exist "%INI_FILE_PATH%" (
 	for /f "usebackq delims== tokens=1,2" %%a in ("%INI_FILE_PATH%") do (
